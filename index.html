@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>suchybuild</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
     canvas { display: block; }
@@ -33,24 +35,43 @@
     }
   </style>
 </head>
-<body>
-  <!-- Interfejs użytkownika -->
-  <div id="ui">
-    <div>Wysokość: <span id="altitude">0</span> m</div>
-    <div>Prędkość: <span id="speed">0</span> m/s</div>
-  </div>
-  <div id="startMenu">
-    <h1>RocketBysuchy</h1>
-    <p>Naciśnij "Start", aby rozpocząć misję!</p>
-    <button id="startButton">Start</button>
-  </div>
-
+<body class="m-0 overflow-hidden font-sans">
+  <div id="app">
+    <div id="ui" v-if="gameStarted">
+      <div>Wysokość: {{ altitude }} m</div>
+      <div>Prędkość: {{ speed }} m/s</div>
+      <div>Najwyższa: {{ maxAltitude }} m</div>
+    </div>
+    <div id="startMenu" v-if="!gameStarted">
+      <h1>RocketBysuchy</h1>
+      <p>Naciśnij "Start", aby rozpocząć misję!</p>
+      <button id="startButton" @click="startGame">Start</button>
+    </div>
+  
   <!-- Ładowanie biblioteki Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
   <script>
+    const { createApp } = Vue;
+    const vm = createApp({
+      data() {
+        return {
+          altitude: 0,
+          speed: 0,
+          maxAltitude: 0,
+          gameStarted: false
+        };
+      },
+      methods: {
+        startGame() {
+          this.gameStarted = true;
+          const audio = new Audio('rocket_launch.mp3');
+          audio.play();
+        }
+      }
+    }).mount('#app');
+
     // Inicjalizacja zmiennych globalnych
     let scene, camera, renderer, rocket, particleSystem, earth, satellites = [], asteroids = [];
-    let gameStarted = false;
     let velocity = new THREE.Vector3(0, 0, 0);
     const gravity = -0.002; // Grawitacja działa w dół
     const maxSpeed = 0.5; // Maksymalna prędkość rakiety
@@ -253,7 +274,7 @@
 
     // Funkcja aktualizująca sterowanie rakiety
     function updateRocketControls() {
-      if (!gameStarted) return;
+      if (!vm.gameStarted) return;
 
       // Obrót rakiety
       if (keysPressed['ArrowLeft']) {
@@ -291,10 +312,13 @@
 
     // Funkcja aktualizująca interfejs użytkownika
     function updateUI() {
-      const altitude = Math.max(0, rocket.position.y - 3.5).toFixed(2);
-      const speed = velocity.length().toFixed(2);
-      document.getElementById('altitude').textContent = altitude;
-      document.getElementById('speed').textContent = speed;
+      const altitude = Math.max(0, rocket.position.y - 3.5);
+      const speed = velocity.length();
+      vm.altitude = altitude.toFixed(2);
+      vm.speed = speed.toFixed(2);
+      if (altitude > vm.maxAltitude) {
+        vm.maxAltitude = altitude.toFixed(2);
+      }
     }
 
     // Funkcja obsługująca kolizje z obiektami
@@ -318,7 +342,7 @@
     // Główna pętla animacji
     function animate() {
       requestAnimationFrame(animate);
-      if (gameStarted) {
+      if (vm.gameStarted) {
         updateRocketControls();
         updateUI();
         checkCollisions();
@@ -332,19 +356,6 @@
       renderer.render(scene, camera);
     }
     animate();
-
-    // Funkcja startu gry
-    function startGame() {
-      gameStarted = true;
-      document.getElementById('startMenu').style.display = 'none';
-
-      // Odtwarzanie dźwięku startu (wymaga pliku audio)
-      const audio = new Audio('rocket_launch.mp3');
-      audio.play();
-    }
-
-    // Obsługa przycisku startu
-    document.getElementById('startButton').addEventListener('click', startGame);
 
     // Obsługa zmiany rozmiaru okna
     window.addEventListener('resize', function() {
