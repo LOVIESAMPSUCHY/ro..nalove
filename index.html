@@ -303,7 +303,7 @@
       satellites.forEach(satellite => {
         const satelliteBox = new THREE.Box3().setFromObject(satellite);
         if (rocketBox.intersectsBox(satelliteBox)) {
-          console.log('Kolizja z satelitą!');
+          console.log('Kolizja z satelitą!');c
           // Tutaj można dodać efekt eksplozji lub zakończenie gry
         }
       });
